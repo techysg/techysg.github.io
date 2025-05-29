@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Quick Notes</title>
+        <style>
+            :root {
+                --bg-light: #f9fafb;
+                --bg-dark: #121212;
+                --text-light: #1e293b;
+                --text-dark: #e2e8f0;
+                --blue: #3b82f6;
+                --red: #ef4444;
+                --green: #22c55e;
+                --yellow: #facc15;
+                --border-radius: 12px;
+                --transition: 0.3s ease;
+                --shadow-light: rgba(0, 0, 0, 0.1);
+                --shadow-dark: rgba(255, 255, 255, 0.1);
+            }
+
+            /* Reset & base */
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                background-color: var(--bg-light);
+                color: var(--text-light);
+                transition: background-color var(--transition),
+                    color var(--transition);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                padding: 20px;
+            }
+            body.dark {
+                background-color: var(--bg-dark);
+                color: var(--text-dark);
+            }
+
+            #app {
+                width: 100%;
+                max-width: 900px;
+            }
+
+            /* Header + controls container */
+            #controls {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            textarea#noteInput {
+                flex: 1 1 100%;
+                min-height: 120px;
+                padding: 14px 16px;
+                font-size: 1rem;
+                border-radius: var(--border-radius);
+                border: 1.5px solid #ccc;
+                resize: vertical;
+                transition: border-color var(--transition),
+                    background-color var(--transition), color var(--transition);
+            }
+            body.dark textarea#noteInput {
+                background-color: #2c2c2c;
+                border-color: #555;
+                color: var(--text-dark);
+            }
+            textarea#noteInput:focus {
+                outline: none;
+                border-color: var(--blue);
+                box-shadow: 0 0 6px var(--blue);
+            }
+
+            select#colorSelect,
+            input#reminderInput {
+                font-size: 1rem;
+                padding: 10px 14px;
+                border-radius: var(--border-radius);
+                border: 1.5px solid #ccc;
+                background-color: white;
+                color: var(--text-light);
+                transition: border-color var(--transition),
+                    background-color var(--transition), color var(--transition);
+            }
+            body.dark select#colorSelect,
+            body.dark input#reminderInput {
+                background-color: #2c2c2c;
+                border-color: #555;
+                color: var(--text-dark);
+            }
+            select#colorSelect:focus,
+            input#reminderInput:focus {
+                outline: none;
+                border-color: var(--blue);
+                box-shadow: 0 0 6px var(--blue);
+            }
+
+            button#saveBtn {
+                background-color: var(--blue);
+                border: none;
+                color: white;
+                font-weight: 600;
+                font-size: 1rem;
+                padding: 12px 24px;
+                border-radius: var(--border-radius);
+                cursor: pointer;
+                transition: background-color var(--transition);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+            }
+            button#saveBtn:hover:not(:disabled) {
+                background-color: #2563eb;
+            }
+            button#saveBtn:disabled {
+                background-color: #93c5fd;
+                cursor: not-allowed;
+            }
+
+            /* Dark mode toggle */
+            button#darkToggle {
+                background-color: transparent;
+                border: 2px solid currentColor;
+                color: inherit;
+                font-size: 1.4rem;
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                transition: background-color var(--transition),
+                    color var(--transition), border-color var(--transition);
+            }
+            button#darkToggle:hover {
+                background-color: var(--blue);
+                color: white;
+                border-color: var(--blue);
+            }
+
+            /* Search input */
+            #searchInput {
+                width: 100%;
+                padding: 12px 16px;
+                margin-bottom: 20px;
+                font-size: 1rem;
+                border-radius: var(--border-radius);
+                border: 1.5px solid #ccc;
+                transition: border-color var(--transition),
+                    background-color var(--transition), color var(--transition);
+            }
+            body.dark #searchInput {
+                background-color: #2c2c2c;
+                border-color: #555;
+                color: var(--text-dark);
+            }
+            #searchInput:focus {
+                outline: none;
+                border-color: var(--blue);
+                box-shadow: 0 0 6px var(--blue);
+            }
+
+            /* Notes container */
+            #notesContainer {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: 20px;
+            }
+
+            /* Each note card */
+            .note {
+                position: relative;
+                background-color: var(--bg-light);
+                border-radius: var(--border-radius);
+                padding: 20px 20px 48px;
+                box-shadow: 0 2px 8px var(--shadow-light);
+                white-space: pre-wrap;
+                word-break: break-word;
+                transition: background-color var(--transition),
+                    box-shadow var(--transition), color var(--transition);
+            }
+            body.dark .note {
+                background-color: #222;
+                box-shadow: 0 2px 8px var(--shadow-dark);
+                color: var(--text-dark);
+            }
+
+            /* Border color accent */
+            .note[data-color="blue"] {
+                border-left: 6px solid var(--blue);
+            }
+            .note[data-color="red"] {
+                border-left: 6px solid var(--red);
+            }
+            .note[data-color="green"] {
+                border-left: 6px solid var(--green);
+            }
+            .note[data-color="yellow"] {
+                border-left: 6px solid var(--yellow);
+            }
+
+            /* Buttons inside note */
+            .note .buttons {
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                display: flex;
+                gap: 10px;
+            }
+            .note button {
+                all: unset;
+                cursor: pointer;
+                font-size: 1.3rem;
+                padding: 6px 10px;
+                border-radius: 8px;
+                transition: background-color var(--transition);
+            }
+            .note button:hover {
+                background-color: rgba(0, 0, 0, 0.1);
+            }
+            body.dark .note button:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+            }
+
+            /* Reminder icon bottom right */
+            .reminder-icon {
+                position: absolute;
+                bottom: 14px;
+                right: 14px;
+                font-size: 1.4rem;
+                user-select: none;
+            }
+
+            /* Fade in animation */
+            .fade-in {
+                animation: fadeInUp 0.4s ease forwards;
+            }
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 600px) {
+                #controls {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                select#colorSelect,
+                input#reminderInput,
+                button#saveBtn,
+                button#darkToggle {
+                    width: 100%;
+                    margin-left: 0 !important;
+                    margin-top: 8px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main id="app" role="main" aria-label="Quick Notes Application">
+            <section id="controls" aria-label="Note input controls">
+                <textarea
+                    id="noteInput"
+                    placeholder="Write your note here..."
+                    aria-label="Note content"
+                ></textarea>
+                <select
+                    id="colorSelect"
+                    aria-label="Select note color"
+                    title="Select note color"
+                >
+                    <option value="blue" selected>Blue</option>
+                    <option value="red">Red</option>
+                    <option value="green">Green</option>
+                    <option value="yellow">Yellow</option>
+                </select>
+                <input
+                    type="datetime-local"
+                    id="reminderInput"
+                    aria-label="Set reminder date and time"
+                    title="Set reminder (optional)"
+                />
+                <button id="saveBtn" aria-label="Save note" disabled>
+                    Save Note
+                </button>
+                <button
+                    id="darkToggle"
+                    aria-label="Toggle dark mode"
+                    title="Toggle dark mode"
+                    type="button"
+                >
+                    🌙
+                </button>
+            </section>
+
+            <input
+                type="search"
+                id="searchInput"
+                placeholder="Search notes..."
+                aria-label="Search notes"
+            />
+
+            <section
+                id="notesContainer"
+                aria-live="polite"
+                aria-relevant="additions removals"
+                aria-label="Saved notes"
+            >
+                <!-- Notes appear here -->
+            </section>
+        </main>
+
+        <script>
+            (() => {
+                const noteInput = document.getElementById("noteInput");
+                const colorSelect = document.getElementById("colorSelect");
+                const reminderInput = document.getElementById("reminderInput");
+                const saveBtn = document.getElementById("saveBtn");
+                const darkToggle = document.getElementById("darkToggle");
+                const notesContainer =
+                    document.getElementById("notesContainer");
+                const searchInput = document.getElementById("searchInput");
+
+                let notes = [];
+
+                // Load theme preference from localStorage
+                function applyTheme(theme) {
+                    if (theme === "dark") {
+                        document.body.classList.add("dark");
+                        darkToggle.textContent = "☀️";
+                        darkToggle.setAttribute(
+                            "aria-label",
+                            "Switch to light mode"
+                        );
+                        localStorage.setItem("theme", "dark");
+                    } else {
+                        document.body.classList.remove("dark");
+                        darkToggle.textContent = "🌙";
+                        darkToggle.setAttribute(
+                            "aria-label",
+                            "Switch to dark mode"
+                        );
+                        localStorage.setItem("theme", "light");
+                    }
+                }
+                let savedTheme = localStorage.getItem("theme") || "light";
+                applyTheme(savedTheme);
+
+                darkToggle.addEventListener("click", () => {
+                    const isDark = document.body.classList.contains("dark");
+                    applyTheme(isDark ? "light" : "dark");
+                });
+
+                // Enable save button only if note text not empty
+                function updateSaveButton() {
+                    saveBtn.disabled = !noteInput.value.trim();
+                }
+                noteInput.addEventListener("input", updateSaveButton);
+                updateSaveButton();
+
+                // Save note
+                saveBtn.addEventListener("click", () => {
+                    const text = noteInput.value.trim();
+                    if (!text) return;
+
+                    const note = {
+                        id: Date.now(),
+                        text,
+                        color: colorSelect.value,
+                        reminder: reminderInput.value || null,
+                    };
+                    notes.push(note);
+                    saveNotes();
+                    addNoteToDOM(note);
+                    noteInput.value = "";
+                    reminderInput.value = "";
+                    updateSaveButton();
+                    filterNotes();
+                });
+
+                // Save to localStorage
+                function saveNotes() {
+                    localStorage.setItem("quickNotes", JSON.stringify(notes));
+                }
+
+                // Load notes from localStorage
+                function loadNotes() {
+                    const stored = localStorage.getItem("quickNotes");
+                    if (stored) {
+                        notes = JSON.parse(stored);
+                        notes.forEach(addNoteToDOM);
+                    }
+                }
+
+                // Create note DOM element
+                function addNoteToDOM(note) {
+                    const noteEl = document.createElement("article");
+                    noteEl.classList.add("note", "fade-in");
+                    noteEl.dataset.color = note.color;
+                    noteEl.dataset.id = note.id;
+                    noteEl.setAttribute("tabindex", "0");
+                    noteEl.setAttribute("role", "article");
+                    noteEl.setAttribute(
+                        "aria-label",
+                        `Note: ${note.text.substring(0, 30)}${
+                            note.text.length > 30 ? "..." : ""
+                        }`
+                    );
+
+                    // Text content
+                    const textNode = document.createElement("div");
+                    textNode.textContent = note.text;
+                    noteEl.appendChild(textNode);
+
+                    // Buttons container
+                    const btns = document.createElement("div");
+                    btns.className = "buttons";
+
+                    // Edit button
+                    const editBtn = document.createElement("button");
+                    editBtn.setAttribute("aria-label", "Edit note");
+                    editBtn.title = "Edit";
+                    editBtn.textContent = "✏️";
+                    editBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        editNote(note.id);
+                    });
+                    btns.appendChild(editBtn);
+
+                    // Delete button
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.setAttribute("aria-label", "Delete note");
+                    deleteBtn.title = "Delete";
+                    deleteBtn.textContent = "🗑️";
+                    deleteBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        deleteNote(note.id);
+                    });
+                    btns.appendChild(deleteBtn);
+
+                    noteEl.appendChild(btns);
+
+                    // Reminder icon
+                    if (note.reminder) {
+                        const reminderIcon = document.createElement("div");
+                        reminderIcon.className = "reminder-icon";
+                        reminderIcon.title =
+                            "Reminder set: " +
+                            new Date(note.reminder).toLocaleString();
+                        reminderIcon.textContent = "⏰";
+                        noteEl.appendChild(reminderIcon);
+                    }
+
+                    notesContainer.prepend(noteEl);
+                }
+
+                // Delete note function
+                function deleteNote(id) {
+                    notes = notes.filter((n) => n.id !== id);
+                    saveNotes();
+                    const el = notesContainer.querySelector(
+                        `.note[data-id="${id}"]`
+                    );
+                    if (el) el.remove();
+                }
+
+                // Edit note function
+                function editNote(id) {
+                    const note = notes.find((n) => n.id === id);
+                    if (!note) return;
+                    // Populate inputs with note values
+                    noteInput.value = note.text;
+                    colorSelect.value = note.color;
+                    reminderInput.value = note.reminder || "";
+                    updateSaveButton();
+
+                    // Remove existing note from UI and notes array (will re-add on save)
+                    deleteNote(id);
+
+                    // Focus textarea for editing
+                    noteInput.focus();
+                }
+
+                // Search/filter notes
+                function filterNotes() {
+                    const query = searchInput.value.toLowerCase();
+                    notesContainer
+                        .querySelectorAll(".note")
+                        .forEach((noteEl) => {
+                            const text = noteEl.textContent.toLowerCase();
+                            if (text.includes(query)) {
+                                noteEl.style.display = "";
+                            } else {
+                                noteEl.style.display = "none";
+                            }
+                        });
+                }
+
+                searchInput.addEventListener("input", filterNotes);
+
+                // Initial load
+                loadNotes();
+            })();
+        </script>
+    </body>
+</html>
